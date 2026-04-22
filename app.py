@@ -23,14 +23,32 @@ if not os.path.exists(MODEL_PATH):
         gdown.download(url, MODEL_PATH, quiet=False)
 
 # =========================
-# LOAD MODEL (FIX COMPATIBILITY)
+# LOAD MODEL (FIX BATCH_SHAPE)
 # =========================
 @st.cache_resource
 def load_model():
     try:
-        from keras.models import load_model
-        model = load_model(MODEL_PATH, compile=False)
+        import h5py
+        from tensorflow.keras.models import model_from_json
+
+        # Buka file h5
+        with h5py.File(MODEL_PATH, 'r') as f:
+            model_config = f.attrs.get('model_config')
+            if model_config is None:
+                raise ValueError("Model config tidak ditemukan")
+
+            model_config = model_config.decode('utf-8')
+
+        # HAPUS batch_shape manual
+        model_config = model_config.replace('"batch_shape": [null, 224, 224, 3],', '')
+        model_config = model_config.replace('"batch_input_shape": [null, 224, 224, 3],', '')
+
+        # Rebuild model
+        model = model_from_json(model_config)
+        model.load_weights(MODEL_PATH)
+
         return model
+
     except Exception as e:
         return str(e)
 
@@ -59,25 +77,16 @@ if uploaded_file is not None:
     image = Image.open(uploaded_file).convert("RGB")
     st.image(image, caption="Gambar", use_container_width=True)
 
-    # =========================
-    # PREPROCESSING
-    # =========================
     img = image.resize((224, 224))
     img_array = np.array(img).astype(np.float32)
     img_array = np.expand_dims(img_array, axis=0)
 
-    # =========================
-    # PREDICTION
-    # =========================
     if st.button("Hitung Jumlah Ikan"):
-        with st.spinner("Memproses gambar..."):
+        with st.spinner("Memproses..."):
             prediction = model.predict(img_array)
             fish_count = max(0, int(np.round(prediction[0][0])))
 
-        st.success(f"Jumlah ikan terdeteksi: {fish_count}")
+        st.success(f"Jumlah ikan: {fish_count}")
 
-# =========================
-# FOOTER
-# =========================
 st.markdown("---")
 st.caption("Built with Streamlit & TensorFlow")
