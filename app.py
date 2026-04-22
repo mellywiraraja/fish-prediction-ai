@@ -1,9 +1,11 @@
+import os
+os.environ["TF_USE_LEGACY_KERAS"] = "1"
+
 import streamlit as st
 import numpy as np
 from PIL import Image
 import tensorflow as tf
 import gdown
-import os
 
 # =========================
 # CONFIG
@@ -21,12 +23,13 @@ if not os.path.exists(MODEL_PATH):
         gdown.download(url, MODEL_PATH, quiet=False)
 
 # =========================
-# LOAD MODEL (ANTI CRASH)
+# LOAD MODEL (FIX COMPATIBILITY)
 # =========================
 @st.cache_resource
 def load_model():
     try:
-        model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+        from keras.models import load_model
+        model = load_model(MODEL_PATH, compile=False)
         return model
     except Exception as e:
         return str(e)
@@ -40,7 +43,7 @@ st.title("🐟 Fish Counter AI")
 st.markdown("Prediksi jumlah benih ikan dari citra secara otomatis")
 
 # =========================
-# HANDLE ERROR MODEL
+# HANDLE ERROR
 # =========================
 if isinstance(model, str):
     st.error("❌ Model gagal dimuat")
