@@ -13,7 +13,7 @@ st.set_page_config(page_title="Fish Counter AI", layout="centered")
 MODEL_PATH = "model.h5"
 
 # =========================
-# DOWNLOAD MODEL (jika belum ada)
+# DOWNLOAD MODEL
 # =========================
 if not os.path.exists(MODEL_PATH):
     with st.spinner("Mengunduh model..."):
@@ -21,20 +21,31 @@ if not os.path.exists(MODEL_PATH):
         gdown.download(url, MODEL_PATH, quiet=False)
 
 # =========================
-# LOAD MODEL
+# LOAD MODEL (ANTI CRASH)
 # =========================
 @st.cache_resource
 def load_model():
-    return tf.keras.models.load_model(MODEL_PATH, compile=False)
+    try:
+        model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+        return model
+    except Exception as e:
+        return str(e)
 
-with st.spinner("Memuat model..."):
-    model = load_model()
+model = load_model()
 
 # =========================
 # UI
 # =========================
 st.title("🐟 Fish Counter AI")
-st.markdown("Upload gambar untuk menghitung jumlah benih ikan secara otomatis")
+st.markdown("Prediksi jumlah benih ikan dari citra secara otomatis")
+
+# =========================
+# HANDLE ERROR MODEL
+# =========================
+if isinstance(model, str):
+    st.error("❌ Model gagal dimuat")
+    st.code(model)
+    st.stop()
 
 # =========================
 # UPLOAD IMAGE
@@ -58,8 +69,6 @@ if uploaded_file is not None:
     if st.button("Hitung Jumlah Ikan"):
         with st.spinner("Memproses gambar..."):
             prediction = model.predict(img_array)
-
-            # POSTPROCESSING
             fish_count = max(0, int(np.round(prediction[0][0])))
 
         st.success(f"Jumlah ikan terdeteksi: {fish_count}")
