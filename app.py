@@ -28,11 +28,12 @@ if not os.path.exists(MODEL_DIR):
         os.remove(ZIP_PATH)
 
 # =========================
-# LOAD MODEL
+# LOAD MODEL (SAVEDMODEL)
 # =========================
 @st.cache_resource
 def load_model():
-    return tf.keras.models.load_model(MODEL_DIR)
+    model = tf.saved_model.load(MODEL_DIR)
+    return model.signatures["serving_default"]
 
 with st.spinner("Memuat model..."):
     model = load_model()
@@ -50,22 +51,24 @@ if uploaded_file is not None:
     st.image(image, caption="Gambar", use_container_width=True)
 
     # =========================
-    # PREPROCESSING (FIX FINAL)
+    # PREPROCESSING (WAJIB SAMA DENGAN TRAINING)
     # =========================
     img = image.resize((224, 224))
     img_array = np.array(img).astype(np.float32) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
 
     # =========================
-    # PREDICTION
+    # PREDICTION (FIX SAVEDMODEL)
     # =========================
     if st.button("Hitung Jumlah Ikan"):
         with st.spinner("Memproses..."):
             try:
-                prediction = model.predict(img_array)
+                input_tensor = tf.convert_to_tensor(img_array)
 
-                # debug shape (optional)
-                st.write("Raw prediction:", prediction)
+                output = model(input_tensor)
+
+                # ambil output pertama
+                prediction = list(output.values())[0].numpy()
 
                 fish_count = int(np.round(prediction[0][0]))
                 fish_count = max(0, fish_count)
