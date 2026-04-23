@@ -4,28 +4,35 @@ from PIL import Image
 import tensorflow as tf
 import gdown
 import os
+import zipfile
 
 # =========================
 # CONFIG
 # =========================
 st.set_page_config(page_title="Fish Counter AI", layout="centered")
 
-MODEL_PATH = "model_fixed.h5"
+MODEL_DIR = "model_saved"
+ZIP_PATH = "model.zip"
 
 # =========================
-# DOWNLOAD MODEL DARI DRIVE
+# DOWNLOAD & EXTRACT MODEL
 # =========================
-if not os.path.exists(MODEL_PATH):
+if not os.path.exists(MODEL_DIR):
     with st.spinner("Mengunduh model..."):
-        url = "https://drive.google.com/uc?id=1yg7jK-C_I-HtnoLY9lZ3-BTiJ3NdMI2g"
-        gdown.download(url, MODEL_PATH, quiet=False)
+        url = "https://drive.google.com/uc?id=1FKXLHjrdc77PZu63mhFhaIanlj-gcwP0"
+        gdown.download(url, ZIP_PATH, quiet=False)
+
+        with zipfile.ZipFile(ZIP_PATH, 'r') as zip_ref:
+            zip_ref.extractall()
+
+        os.remove(ZIP_PATH)
 
 # =========================
-# LOAD MODEL (SUDAH NORMAL)
+# LOAD MODEL
 # =========================
 @st.cache_resource
 def load_model():
-    return tf.keras.models.load_model(MODEL_PATH, compile=False)
+    return tf.keras.models.load_model(MODEL_DIR)
 
 with st.spinner("Memuat model..."):
     model = load_model()
