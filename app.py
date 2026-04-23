@@ -51,14 +51,21 @@ if uploaded_file is not None:
     st.image(image, caption="Gambar", use_container_width=True)
 
     # =========================
-    # PREPROCESSING (WAJIB SAMA DENGAN TRAINING)
+    # PREPROCESSING (SESUAI TRAINING KAMU)
     # =========================
     img = image.resize((224, 224))
-    img_array = np.array(img).astype(np.float32) / 255.0
+
+    # 🔥 PENTING: TANPA NORMALISASI
+    img_array = np.array(img).astype(np.float32)
+
     img_array = np.expand_dims(img_array, axis=0)
 
+    # DEBUG (boleh dihapus nanti)
+    st.write("Shape:", img_array.shape)
+    st.write("Min-Max:", img_array.min(), img_array.max())
+
     # =========================
-    # PREDICTION (FIX SAVEDMODEL)
+    # PREDICTION
     # =========================
     if st.button("Hitung Jumlah Ikan"):
         with st.spinner("Memproses..."):
@@ -67,13 +74,20 @@ if uploaded_file is not None:
 
                 output = model(input_tensor)
 
-                # ambil output pertama
                 prediction = list(output.values())[0].numpy()
 
-                fish_count = int(np.round(prediction[0][0]))
+                # ambil hasil
+                raw_value = prediction[0][0]
+
+                # rounding + safety
+                fish_count = int(np.round(raw_value))
                 fish_count = max(0, fish_count)
 
+                # tampilkan
                 st.success(f"Jumlah ikan terdeteksi: {fish_count}")
+
+                # debug tambahan (opsional)
+                st.write("Raw prediction:", raw_value)
 
             except Exception as e:
                 st.error(f"Terjadi error saat prediksi: {e}")
