@@ -43,27 +43,37 @@ with st.spinner("Memuat model..."):
 st.title("🐟 Fish Counter AI")
 st.markdown("Prediksi jumlah benih ikan dari citra secara otomatis")
 
-# =========================
-# UPLOAD IMAGE
-# =========================
 uploaded_file = st.file_uploader("Upload Gambar", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file).convert("RGB")
     st.image(image, caption="Gambar", use_container_width=True)
 
-    # PREPROCESSING
+    # =========================
+    # PREPROCESSING (FIX FINAL)
+    # =========================
     img = image.resize((224, 224))
-    img_array = np.array(img).astype(np.float32)
+    img_array = np.array(img).astype(np.float32) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
 
+    # =========================
     # PREDICTION
+    # =========================
     if st.button("Hitung Jumlah Ikan"):
         with st.spinner("Memproses..."):
-            prediction = model.predict(img_array)
-            fish_count = max(0, int(np.round(prediction[0][0])))
+            try:
+                prediction = model.predict(img_array)
 
-        st.success(f"Jumlah ikan terdeteksi: {fish_count}")
+                # debug shape (optional)
+                st.write("Raw prediction:", prediction)
+
+                fish_count = int(np.round(prediction[0][0]))
+                fish_count = max(0, fish_count)
+
+                st.success(f"Jumlah ikan terdeteksi: {fish_count}")
+
+            except Exception as e:
+                st.error(f"Terjadi error saat prediksi: {e}")
 
 # =========================
 # FOOTER
